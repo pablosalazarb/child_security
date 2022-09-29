@@ -64,4 +64,57 @@ def login():
             msg = 'Los datos ingresados son incorrectos'
     return render_template('login.html' , data=data, msg=msg)
 
-    
+#Vista de registro de usuarios nuevos
+@app.route('/new-register')
+def register():    
+    data = {
+        'titulo' : 'Child Security - Registrate'
+    }
+    #Mensaje a mostrar por cualquier error
+    msg = ''
+    #Almacenamos la fecha de este instante
+    today = datetime.now()
+    f_reg = today.date
+    foto = ''
+    conn = mysql.connect()
+
+    #Guardamos la peticion (request)
+    req = request.form
+    #Corroboramos el user y password
+    if request.method == 'POST' and 'nombre' in request.form and 'apellido' in request.form and 'usename' in request.form and 'email' in request.form and 'password' in request.form:
+        #Guardamos las variables para tener mejor acceso
+        params = {
+            'nombre' : req.get("nombre"),
+            'apellido' : req.get("apellido"),
+            'username' : req.get("username"),
+            'email' : req.get("email"),
+            'password' : req.get("password"),
+            'f_reg' : f_reg,
+            'foto_perfil' : foto
+        }
+        #Revisamos si los datos de la cuenta existen en la base de datos
+        cursor = conn.cursor()
+        query = 'INSERT into usuarios (nombre, apellido, user, correo, password, fecha_reg, foto_perfil) values(%(nombre)s, %(apellido)s, %(username)s, %(email)s, %(password)s, %(f_reg)s, %(foto_perfil)s)'
+        #Ejecutamos la sentencia
+        cursor.execute(query, params)
+        #Ejecutamos un commit (para que se ejecute la query)
+        conn.commit()
+        #Redirigimod al dashboard principal con el usuario loggeado
+        return redirect('/dashboard')
+    else:
+        #Si el usuario/contrasenia son incorrectos
+        msg = 'Uno de los datos ingresados no es correcto...'
+    #Renderizamos el form de registrar con la variable mensaje (si hubiese)
+    return render_template('register.html', data=data, msg=msg)
+
+#Validamos en la vista principal de la app para protegerla de usuarios no autenticados
+@app.route('/dashboard')
+def index():
+    data = {
+        'titulo' : 'Child Security'
+    }
+    #Si la variable de session loggedin existe en session
+    if 'loggedin' in session:
+        #El usuario tiene session activa, renderizamos el dashboard
+        return render_template('dashboard.html', data=data, username=session['username'], profilepic=session['profile_pic'], nombre=session['name'], apellido=session['surname'])
+    return redirect(url_for('/'))
